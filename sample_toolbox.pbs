@@ -1,2 +1,9 @@
-source /g/data/dg9/insar/Data61_VL/toolbox/PyRateVenv/bin/activate
-source /g/data/dg9/insar/Data61_VL/toolbox/PyRate/utils/load_modules.sh
+PYRATE_TOOLBOX=/g/data/dg9/insar/Data61_VL/toolbox
+
+# Export PyRate installation location so solutions can use this.
+export PYRATE_INSTALL_DIR=${PYRATE_TOOLBOX}/PyRate
+
+# Tell the nci_load_modules script where to find the venv
+PYRATE_VENV=${PYRATE_TOOLBOX}/PyRateVenv
+
+source ${PYRATE_INSTALL_DIR}/scripts/nci_load_modules.sh
