@@ -174,10 +174,10 @@ with TemporaryDirectory() as temp_output_dir:
 
     # Run PyRate
     try:
-        run_pyrate_cmd("converttogeotiff", conf_file)
+        run_pyrate_cmd("conv2tif", conf_file)
         run_pyrate_cmd("prepifg", conf_file)
-        run_pyrate_cmd("process", conf_file, "--rows", "1", "--cols", "1")
-        run_pyrate_cmd("postprocess", conf_file, "--rows", "1", "--cols", "1")
+        run_pyrate_cmd("process", conf_file)
+        run_pyrate_cmd("merge", conf_file)
     except subprocess.CalledProcessError as ex:
         with open(os.path.join(temp_output_dir, "EXCEPTION.txt"), 'w') as f:
             f.write(f"PyRate job failed with exception.\nreturncode: {ex.returncode}\nfailed command: {ex.cmd}\n\nexception: {ex!r}")
