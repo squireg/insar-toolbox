@@ -11,22 +11,22 @@ CONF_FILE = r"""
 # input/output parameters
 
 # Directory for the (unwrapped) interferograms.
-obsdir:       /short/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/small_test/gamma_obs
+obsdir:       /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/small_test/gamma_obs
 
 # File containing the list of interferograms to use.
-ifgfilelist:  /short/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/small_test/gamma_obs/ifms_17
+ifgfilelist:  /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/small_test/gamma_obs/ifms_17
 
 # The DEM file used in the InSAR processing
-demfile:      /short/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/small_test/gamma_obs/20060619_utm.dem
+demfile:      /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/small_test/gamma_obs/20060619_utm.dem
 
 # The DEM header file from GAMMA (*.par) or ROI_PAC (*.rsc).
-demHeaderFile: /short/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/small_test/gamma_obs/20060619_utm_dem.par
+demHeaderFile: /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/small_test/gamma_obs/20060619_utm_dem.par
 
 # GAMMA only: The directory containing GAMMA slc.par header files for all epochs
-slcFileDir:   /short/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/small_test/gamma_obs
+slcFileDir:   /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/small_test/gamma_obs
 
 # GAMMA only: File listing the pool of available slc.par header files
-slcfilelist: /short/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/small_test/gamma_obs/headers
+slcfilelist: /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/small_test/gamma_obs/headers
 
 # Directory containing the coherence files. If not provided, obsdir will be used.
 cohfiledir:

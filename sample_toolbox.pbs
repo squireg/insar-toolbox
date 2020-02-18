@@ -1,2 +1,2 @@
-source /short/dg9/insar/Data61_VL/toolbox/PyRateVenv/bin/activate
-source /short/dg9/insar/Data61_VL/toolbox/PyRate/utils/load_modules.sh
+source /g/data/dg9/insar/Data61_VL/toolbox/PyRateVenv/bin/activate
+source /g/data/dg9/insar/Data61_VL/toolbox/PyRate/utils/load_modules.sh
