@@ -11,22 +11,22 @@ CONF_FILE = r"""
 # input/output parameters
 
 # Directory for the (unwrapped) interferograms.
-obsdir:       /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/small_test/gamma_obs
+obsdir:       /g/data/dg9/insar/Data61_VL/toolbox/PyRate/sample_data/input/interferograms
 
 # File containing the list of interferograms to use.
-ifgfilelist:  /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/small_test/gamma_obs/ifms_17
+ifgfilelist:  /g/data/dg9/insar/Data61_VL/toolbox/PyRate/sample_data/input/interferogram_list.txt
 
 # The DEM file used in the InSAR processing
-demfile:      /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/small_test/gamma_obs/20060619_utm.dem
+demfile:      /g/data/dg9/insar/Data61_VL/toolbox/PyRate/sample_data/input/dem/20060619_utm.dem
 
 # The DEM header file from GAMMA (*.par) or ROI_PAC (*.rsc).
-demHeaderFile: /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/small_test/gamma_obs/20060619_utm_dem.par
+demHeaderFile: /g/data/dg9/insar/Data61_VL/toolbox/PyRate/sample_data/input/dem/20060619_utm_dem.par
 
 # GAMMA only: The directory containing GAMMA slc.par header files for all epochs
-slcFileDir:   /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/small_test/gamma_obs
+slcFileDir:   /g/data/dg9/insar/Data61_VL/toolbox/PyRate/sample_data/input/headers
 
 # GAMMA only: File listing the pool of available slc.par header files
-slcfilelist: /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/small_test/gamma_obs/headers
+slcfilelist: /g/data/dg9/insar/Data61_VL/toolbox/PyRate/sample_data/input/headers_list.txt
 
 # Directory containing the coherence files. If not provided, obsdir will be used.
 cohfiledir:
@@ -56,7 +56,7 @@ nan_conversion: 1
 # parallel = 2, linrate/timeseries computation is done in parallel for each pixel
 # parallel = 0, linrate/timeseries computation is done in serial pixel by pixel
 parallel:  0
-processes: 8
+processes: 1
 
 #------------------------------------
 # Coherence masking options: used by process
@@ -71,7 +71,7 @@ cohthresh:  0.1
 # ifglksx/y: multi-look/subsampling factor in east and north direction respectively
 # ifgxfirst,ifgyfirst: x,y of top-left corner
 # ifgxlast,ifgylast: x,y of bottom-right corner
-ifgcropopt:   1
+ifgcropopt:   4
 ifglksx:      1
 ifglksy:      1
 ifgxfirst:    150.92
@@ -81,16 +81,16 @@ ifgylast:     -34.22
 
 #------------------------------------
 # Reference pixel search options
-# refx/y: coordinate of reference pixel. If <= 0 then search for pixel will be performed
+# refx/y: Lon/Lat coordinate of reference pixel. If left blank then search for best pixel will be performed
 # refnx/y: number of search grid points in x/y direction
 # refchipsize: chip size of the data window at each search grid point
 # refminfrac: minimum fraction of valid (non-NaN) pixels in the data window
-refx:          0
-refy:          0
+refx:          
+refy:          
 refnx:         5
 refny:         5
 refchipsize:   5
-refminfrac:    0.8
+refminfrac:    0.01
 
 #------------------------------------
 # Reference phase calculation method
@@ -123,7 +123,7 @@ orbfitlksy:    1
 # tlpfmethod: 1 = Gaussian, 2 = Triangular, 3 = Mean filter
 # tlpfcutoff: cutoff t0 for gaussian filter in year;
 # tlpfpthr: valid pixel threshold;
-apsest:         1
+apsest:         0
 slpfmethod:     2
 slpfcutoff:     0.001
 slpforder:      1
@@ -147,7 +147,7 @@ smfactor:     -0.25
 ts_pthr:       10
 
 #------------------------------------
-# Linear Rate calculation
+# Stacking calculation
 # pthr: minimum number of coherent ifg connections for each pixel
 # nsig: n-sigma used as residuals threshold for iterativel least squares stacking
 # maxsig: maximum residual used as a threshold for values in the rate map
