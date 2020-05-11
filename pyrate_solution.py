@@ -3,15 +3,14 @@ import os.path
 import subprocess
 import sys
 from tempfile import TemporaryDirectory
+import xml.etree.ElementTree as ET
+
 
 CONF_FILE = r"""
 # PyRate configuration file for GAMMA-format interferograms
 #
 #------------------------------------
 # input/output parameters
-
-# Tile dataset
-tileset: ${tile_set}
 
 # Directory for the (unwrapped) interferograms.
 obsdir:       ${obs_dir}
@@ -158,6 +157,41 @@ nsig:          ${nsig}
 pthr:          ${pthr}
 maxsig:        10000
 """
+
+# Tile dataset to grab pyrate tile data from.
+insar_tiles = "${insar_tiles}"
+
+# Namespaces for wfs/gml/etc
+NS_WFS1 = {
+    "wfs": "http://www.opengis.net/wfs",
+    "gml": "http://www.opengis.net/gml"
+}
+PATH_WFS1 = "./gml:featureMembers//roi:NSW_LGA__3"
+
+NS_WFS2 = {
+    "wfs": "http://www.opengis.net/wfs/2.0",
+    "gml": "http://www.opengis.net/gml/3.2"
+}
+PATH_WFS2 = "./wfs:member//roi:NSW_LGA__3"
+
+tree = ET.parse(insar_tiles)
+root = tree.getroot()
+if root.tag == "{http://www.opengis.net/wfs}FeatureCollection":
+    print("Found WFS v1 FeatureCollection at root.")
+    NS = NS_WFS1
+    PATH = PATH_WFS1
+elif root.tag == "{http://www.opengis.net/wfs/2.0}FeatureCollection":
+    print("Found WFS v2 FeatureCollection at root.")
+    NS = NS_WFS2
+    PATH = PATH_WFS2
+else:
+    print("Not a WFS FeatureCollection, giving up.")
+    sys.exit(1)
+
+for tile_name in [tile_id.title() for tile_id in
+                 set(element.text for element in root.findall(PATH, NS))]:
+    print("Found tile:", tile_name)
+sys.exit(0)
 
 def run_pyrate_cmd(pyrate_cmd, config_file, *args):
     """Run pyrate_cmd using config_file and any extra args."""
