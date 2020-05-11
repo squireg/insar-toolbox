@@ -10,6 +10,9 @@ CONF_FILE = r"""
 #------------------------------------
 # input/output parameters
 
+# Tile dataset
+tileset: ${tile_set}
+
 # Directory for the (unwrapped) interferograms.
 obsdir:       ${obs_dir}
 
