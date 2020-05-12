@@ -197,9 +197,9 @@ else:
 for tile in root.findall(PATH, NS):
     tile_id = tile.get("{{{}}}id".format(NS_GML))
     relorb_element = tile.find("insar:RelOrbit", NS)
-    relorb = relorb_element.text if relorb_element else None
+    relorb = relorb_element.text if relorb_element is not None else None
     frame_element = tile.find("insar:Frame", NS)
-    frame = frame_element.text if frame_element else None
+    frame = frame_element.text if frame_element is not None else None
     print("Found tile:", tile_id, relorb, frame)
 
 sys.exit(0)
