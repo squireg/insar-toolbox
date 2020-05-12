@@ -164,15 +164,17 @@ insar_tiles = "${insar_tiles}"
 # Namespaces for wfs/gml/etc
 NS_WFS1 = {
     "wfs": "http://www.opengis.net/wfs",
-    "gml": "http://www.opengis.net/gml"
+    "gml": "http://www.opengis.net/gml",
+    "insar": "http://csiro.au/insar"
 }
-PATH_WFS1 = "./gml:featureMembers//roi:NSW_LGA__3"
+PATH_WFS1 = "./gml:featureMembers//insar:S1_descending_frames_Data61"
 
 NS_WFS2 = {
     "wfs": "http://www.opengis.net/wfs/2.0",
-    "gml": "http://www.opengis.net/gml/3.2"
+    "gml": "http://www.opengis.net/gml/3.2",
+    "insar": "http://csiro.au/insar"
 }
-PATH_WFS2 = "./wfs:member//roi:NSW_LGA__3"
+PATH_WFS2 = "./wfs:member//insar:S1_descending_frames_Data61"
 
 tree = ET.parse(insar_tiles)
 root = tree.getroot()
@@ -188,9 +190,11 @@ else:
     print("Not a WFS FeatureCollection, giving up.")
     sys.exit(1)
 
-for tile_name in [tile_id.title() for tile_id in
-                 set(element.text for element in root.findall(PATH, NS))]:
-    print("Found tile:", tile_name)
+for tile in root.findall(PATH, NS):
+    tile_id = tile.get("gml:id")
+    relorb = tile.find("insar:RelOrbit").text
+    frame = tile.find("insar:Frame").text
+    print("Found tile:", tile_id, relorb, frame)
 sys.exit(0)
 
 def run_pyrate_cmd(pyrate_cmd, config_file, *args):
