@@ -178,7 +178,7 @@ NS_WFS2 = {
 }
 PATH_WFS2 = "./wfs:member//insar:S1_descending_frames_Data61"
 
-tree = ET.parse("/home/squ022/test.xml")
+tree = ET.parse(insar_tiles)
 root = tree.getroot()
 if root.tag == "{http://www.opengis.net/wfs}FeatureCollection":
     print("Found WFS v1 FeatureCollection at root.")
