@@ -2,8 +2,11 @@ import os
 import os.path
 import subprocess
 import sys
+from glob import glob
 from tempfile import TemporaryDirectory
 import xml.etree.ElementTree as ET
+
+INSAR_ARD_DIR="/g/data/dz56/INSAR_ARD/VV/INSAR_ANALYSIS/VICTORIA/S1/GAMMA/"
 
 
 CONF_FILE = r"""
@@ -13,31 +16,31 @@ CONF_FILE = r"""
 # input/output parameters
 
 # Directory for the (unwrapped) interferograms.
-obsdir:       ${obs_dir}
+obsdir:       {obsdir}
 
 # File containing the list of interferograms to use.
-ifgfilelist:  ${ifg_list}
+ifgfilelist:  {ifgfilelist}
 
 # The DEM file used in the InSAR processing
-demfile:      ${dem_file}
+demfile:      {demfile}
 
 # The DEM header file from GAMMA (*.par) or ROI_PAC (*.rsc).
-demHeaderFile: ${dem_header_file}
+demHeaderFile: {demheaderfile}
 
 # GAMMA only: The directory containing GAMMA slc.par header files for all epochs
-slcFileDir:   ${slc_file_dir}
+slcFileDir:   {slcfiledir}
 
 # GAMMA only: File listing the pool of available slc.par header files
-slcfilelist: ${slc_file_list}
+slcfilelist: {slcfilelist}
 
 # Directory containing the coherence files. If not provided, obsdir will be used.
-cohfiledir: ${coh_file_dir}
+cohfiledir: {cohfiledir}
 
 # File listing the pool of available coherence files.
-cohfilelist: ${coh_file_list}
+cohfilelist: {cohfilelist}
 
 # Directory to write the outputs to
-outdir:       {0}
+outdir:       {outdir}
 
 # InSAR processing software: ROI_PAC = 0, GAMMA = 1
 processor:    1
@@ -194,15 +197,24 @@ else:
     print("Not a WFS FeatureCollection, giving up.")
     sys.exit(1)
 
-for tile in root.findall(PATH, NS):
-    tile_id = tile.get("{{{}}}id".format(NS_GML))
-    relorb_element = tile.find("insar:RelOrbit", NS)
-    relorb = relorb_element.text if relorb_element is not None else None
-    frame_element = tile.find("insar:Frame", NS)
-    frame = frame_element.text if frame_element is not None else None
-    print("Found tile:", tile_id, relorb, frame)
+# Grab the first tile
+tile = root.find(PATH, NS)
+if tile is None:
+    print("No tile found in input data.")
+    sys.exit(1)
 
-sys.exit(0)
+tile_id = tile.get("{{{}}}id".format(NS_GML))
+relorb_element = tile.find("insar:RelOrbit", NS)
+relorb = relorb_element.text if relorb_element is not None else None
+frame_element = tile.find("insar:Frame", NS)
+frame = frame_element.text if frame_element is not None else None
+print("Found tile", tile_id)
+arddir = os.path.join(INSAR_ARD_DIR, f"T{relorb}D_F{frame}")
+if not os.path.isdir(arddir):
+    print("Interferograms directory from tile info not found")
+    print(arddir, " is not a directory.")
+    sys.exit(1)
+print("INSAR ARD data from", arddir)
 
 def run_pyrate_cmd(pyrate_cmd, config_file, *args):
     """Run pyrate_cmd using config_file and any extra args."""
@@ -215,25 +227,84 @@ def run_pyrate_cmd(pyrate_cmd, config_file, *args):
 with TemporaryDirectory() as temp_output_dir:
     print("Created PyRate output directory", temp_output_dir)
 
+    # Create the input dir where we will put the ifg copies
+    obsdir = os.path.join(temp_output_dir, "obsdir")
+    os.mkdir(obsdir)
+
+    ifgdir = os.path.join(arddir, "INT")
+    if not os.path.isdir(ifgdir):
+        print("Interferograms directory not found:", ifgdir)
+        sys.exit(1)
+
+    # Generate the ifg list and copy files across
+    print("Copying interferograms from", ifgdir, "into", obsdir)
+    ifgfilelist = os.path.join(temp_output_dir, "interferograms.list")
+    print("Listing interferograms in", ifgfilelist)
+    with open(ifgfilelist, 'w') as f:
+        for unw in glob(os.path.join(ifgdir, "*", "*4rlks.unw")):
+            print(unw)
+            unwf = os.path.basename(unw)
+            f.write(f"{unwf}\n")
+
+    # Find the DEM and its header file
+    demdir = os.path.join(arddir, "DEM")
+    demfile = None
+    demheaderfile = None
+    if os.path.isdir(demdir):
+        print("Found DEM directory", demdir)
+        dems = glob(os.path.join(demdir, "*.dem"))
+        slcs = glob(os.path.join(demdir, "*.par"))
+        for demfile in dems:
+            i = slcs.index(f"{demfile}.par")
+            if i > -1:
+                demheaderfile = slcs[i]
+                break
+        if demheaderfile is not None:
+            print("Found DEM file", demfile)
+            print("Found DEM header file", demheaderfile)
+        else:
+            print("Failed to find DEM file and header file.")
+    else:
+        print("Failed to find a DEM directory at", demdir)
+
+    print("I don't know where to find GAMMA slc.par header files :-(")
+    slcfiledir = None
+    slcfilelist = None
+
+    print("Please tell me where the coherence files are.")
+    cohfiledir = ''
+    cohfilelist = ''
+
+    config = dict(obsdir=obsdir,
+                  ifgfilelist=ifgfilelist,
+                  demfile=demfile,
+                  demheaderfile=demheaderfile,
+                  slcfiledir=slcfiledir,
+                  slcfilelist=slcfilelist,
+                  cohfiledir=cohfiledir,
+                  cohfilelist=cohfilelist,
+                  outdir=temp_output_dir)
+
     # Create the config file with interpolated values
     conf_file = os.path.join(temp_output_dir, "pyrate_job.conf")
     with open(conf_file, 'w') as f:
-        f.write(CONF_FILE.format(temp_output_dir))
+        f.write(CONF_FILE.format(**config))
 
-    # Run PyRate
-    try:
-        run_pyrate_cmd("conv2tif", conf_file)
-        run_pyrate_cmd("prepifg", conf_file)
-        run_pyrate_cmd("process", conf_file)
-        run_pyrate_cmd("merge", conf_file)
-    except subprocess.CalledProcessError as ex:
-        with open(os.path.join(temp_output_dir, "EXCEPTION.txt"), 'w') as f:
-            f.write(f"PyRate job failed with exception.\nreturncode: {ex.returncode}\nfailed command: {ex.cmd}\n\nexception: {ex!r}")
+    # Run PyRate if we have a hopefully valid config
+    if all(v is not None for v in config.values()):
+        try:
+            run_pyrate_cmd("conv2tif", conf_file)
+            run_pyrate_cmd("prepifg", conf_file)
+            run_pyrate_cmd("process", conf_file)
+            run_pyrate_cmd("merge", conf_file)
+        except subprocess.CalledProcessError as ex:
+            with open(os.path.join(temp_output_dir, "EXCEPTION.txt"), 'w') as f:
+                f.write(f"PyRate job failed with exception.\nreturncode: {ex.returncode}\nfailed command: {ex.cmd}\n\nexception: {ex!r}")
 
+    # Upload results, files only
     # Work around "cloud" bug in vgl by running in the output dir so we can use
     # relative filenames.
     os.chdir(temp_output_dir)
-    # Upload results, files only
     for f in os.listdir(temp_output_dir):
         abs_f = os.path.join(temp_output_dir, f)
         if not os.path.isdir(abs_f):
