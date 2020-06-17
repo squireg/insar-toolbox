@@ -336,7 +336,7 @@ class InsarTileFeatures(object):
     def load(self, tiles_path):
         """Load and parse the collection from file at tiles_path."""
         self.tree = ET.parse(insar_tiles)
-        self.root = tree.getroot()
+        self.root = self.tree.getroot()
         if self.root.tag == "{http://www.opengis.net/wfs}FeatureCollection":
             print("Found WFS v1 FeatureCollection at root.")
             self.ns = NS_WFS1
