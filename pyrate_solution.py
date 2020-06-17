@@ -194,6 +194,22 @@ nsig:          ${nsig}
 maxsig:        1000
 """
 
+# Namespaces for wfs/gml/etc
+NS_WFS1 = {
+    "wfs": "http://www.opengis.net/wfs",
+    "gml": "http://www.opengis.net/gml",
+    "insar": "http://csiro.au/insar"
+}
+PATH_WFS1 = "./gml:featureMembers//insar:S1_descending_frames_Data61"
+
+NS_WFS2 = {
+    "wfs": "http://www.opengis.net/wfs/2.0",
+    "gml": "http://www.opengis.net/gml/3.2",
+    "insar": "http://csiro.au/insar"
+}
+PATH_WFS2 = "./wfs:member//insar:S1_descending_frames_Data61"
+
+
 class PyrateException(Exception):
     pass
 
@@ -317,21 +333,6 @@ class InsarTile(object):
 
 class InsarTileFeatures(object):
     """Parse a feature collection of INSAR tiles."""
-
-    # Namespaces for wfs/gml/etc
-    NS_WFS1 = {
-        "wfs": "http://www.opengis.net/wfs",
-        "gml": "http://www.opengis.net/gml",
-        "insar": "http://csiro.au/insar"
-    }
-    PATH_WFS1 = "./gml:featureMembers//insar:S1_descending_frames_Data61"
-
-    NS_WFS2 = {
-        "wfs": "http://www.opengis.net/wfs/2.0",
-        "gml": "http://www.opengis.net/gml/3.2",
-        "insar": "http://csiro.au/insar"
-    }
-    PATH_WFS2 = "./wfs:member//insar:S1_descending_frames_Data61"
 
     def load(self, tiles_path):
         """Load and parse the collection from file at tiles_path."""
