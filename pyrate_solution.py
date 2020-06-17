@@ -378,7 +378,7 @@ try:
     # Grab the first tile
     # TODO: Support processing multiple tiles
     tile = dataset.first()
-    tile_id = dataset.gmlid(tile)
+    tile_id = tile.gmlid
     print("Found tile", tile_id)
 except Exception as ex:
     print("Loading INSAR tile features failed:", ex)
