@@ -200,14 +200,14 @@ NS_WFS1 = {
     "gml": "http://www.opengis.net/gml",
     "insar": "http://csiro.au/insar"
 }
-PATH_WFS1 = "./gml:featureMembers//insar:S1_descending_frames_Data61"
+PATH_WFS1 = "./gml:featureMembers//insar:S1_descending_frames"
 
 NS_WFS2 = {
     "wfs": "http://www.opengis.net/wfs/2.0",
     "gml": "http://www.opengis.net/gml/3.2",
     "insar": "http://csiro.au/insar"
 }
-PATH_WFS2 = "./wfs:member//insar:S1_descending_frames_Data61"
+PATH_WFS2 = "./wfs:member//insar:S1_descending_frames"
 
 
 class PyrateException(Exception):
