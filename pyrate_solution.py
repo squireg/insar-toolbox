@@ -450,6 +450,7 @@ with TemporaryDirectory() as temp_output_dir:
     with open(hdrfile, 'w') as f:
         for slc in tile.slcs:
             f.write(slc)
+            f.write('\n')
 
     config = dict(ifgfilelist=ifgfilelist,
                   demfile=tile.dem_file,
