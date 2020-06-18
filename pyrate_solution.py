@@ -235,8 +235,8 @@ class InsarTile(object):
         self._intervals = []
 
         def _prop(element):
-            elem = tile.find(element, ns)
-            if elem:
+            elem = tile.find(element, namespaces=ns)
+            if elem is not None:
                 return elem.text
             return f"NO TILE ELEMENT {element}"
 
@@ -337,7 +337,7 @@ class InsarTileFeatures(object):
 
     def load(self, tiles_path):
         """Load and parse the collection from file at tiles_path."""
-        self.tree = ET.parse(insar_tiles)
+        self.tree = ET.parse(tiles_path)
         self.root = self.tree.getroot()
         if self.root.tag == "{http://www.opengis.net/wfs}FeatureCollection":
             print("Found WFS v1 FeatureCollection at root.")
