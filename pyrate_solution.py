@@ -431,7 +431,9 @@ with TemporaryDirectory() as temp_output_dir:
         with open(cohfile, 'w') as g:
             for interval in intervals:
                 f.write(interval.tif if has_tifs else interval.unw)
+                f.write('\n')
                 g.write(interval.coh)
+                g.write('\n')
 
     # Find the DEM and its header file
     if not tile.dem_file or not tile.dem_header:
