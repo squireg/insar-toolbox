@@ -10,7 +10,7 @@ import re
 
 INSAR_ARD_DIR = "/g/data/dz56/INSAR_ARD/VV/INSAR_ANALYSIS/VICTORIA/S1/GAMMA/"
 INSAR_ARD_VARIANT = "_VV_4rlks_eqa"
-INSAR_COH_VARIANT = "_VV_4rlks_flat_eqa_cc"
+INSAR_COH_VARIANT = "_VV_4rlks_flat_eqa"
 INSAR_INTERVAL_DIR_RE = re.compile("(\d\d\d\d)(\d\d)(\d\d)-(\d\d\d\d)(\d\d)(\d\d)")
 INSAR_DEM_RE = re.compile("(\d\d\d\d)(\d\d)(\d\d).*")
 
@@ -32,7 +32,8 @@ START_DATE = "${startdate}"
 END_DATE = "${enddate}"
 
 # Tile dataset to grab pyrate tile data from.
-insar_tiles = "${insar_tiles}"
+#insar_tiles = "${insar_tiles}"
+insar_tiles = "/home/599/ggs599/test.xml"
 
 CONF_FILE = r"""
 # PyRate configuration file for GAMMA-format interferograms
@@ -269,7 +270,7 @@ class InsarTile(object):
             latest = None
             dem_f = None
             dem_h = None
-            for f in glob(os.path.join(demdir, f"*{variant}_dem.tif")):
+            for f in glob(os.path.join(demdir, f"*{variant}.dem.tif")):
                 demdate = INSAR_DEM_RE.match(os.path.basename(f))
                 if latest is None or demdate > latest:
                     latest = demdate
@@ -298,21 +299,31 @@ class InsarTile(object):
         """Load the interval contained in DirEntry entry."""
         match = INSAR_INTERVAL_DIR_RE.match(entry.name)
         if match:
-            start = date(*match.group(1,2,3).map(int))
-            end = date(*match.group(4,5,6).map(int))
+            start = date(*map(int, match.group(1,2,3)))
+            end = date(*map(int, match.group(4,5,6)))
             interval = InsarInterval(entry.name, entry.path, start, end)
             unw = os.path.join(entry.path, f"{entry.name}{variant}.unw")
             if os.path.isfile(unw):
                 interval.unw = unw
-            tif = os.path.join(entry.path, f"{entry.name}{variant}_unw.tif")
+            tif = os.path.join(entry.path, f"{entry.name}{variant}.unw.tif")
             if os.path.isfile(tif):
                 interval.tif = tif
+            else:
+                # Try the other tif filename style
+                tif = os.path.join(entry.path, f"{entry.name}{variant}_unw.tif")
+                if os.path.isfile(tif):
+                    interval.tif = tif
             if interval.unw or interval.tif:
-                coh = os.path.join(entry.path, f"{entry.name}{coh_variant}.tif")
+                coh = os.path.join(entry.path, f"{entry.name}{coh_variant}.cc.tif")
                 if os.path.isfile(coh):
                     interval.coh = coh
                 else:
-                    print("Missing coherence file for interferogram:", interval.tif if interval.tif else interval.unw)
+                    # Try underscore style
+                    coh = os.path.join(entry.path, f"{entry.name}{coh_variant}_cc.tif")
+                    if os.path.isfile(coh):
+                        interval.coh = coh
+                    else:
+                        print("Missing coherence file", coh, "for interferogram:", interval.tif if interval.tif else interval.unw)
                 self._intervals.append(interval)
             else:
                 print(f"No unwrapped interferogram or tiff found in {entry.path}")
@@ -329,6 +340,11 @@ class InsarTile(object):
         overlaps before or after the specified temporal range.
 
         """
+        if self._intervals:
+            if start is None:
+                start = self._intervals[0].start
+            if end is None:
+                end = self._intervals[-1].end
         return [i for i in self._intervals if i.start >= start and i.end <= end]
 
 
