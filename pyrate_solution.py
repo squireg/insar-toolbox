@@ -298,8 +298,8 @@ class InsarTile(object):
         """Load the interval contained in DirEntry entry."""
         match = INSAR_INTERVAL_DIR_RE.match(entry.name)
         if match:
-            start = date(*match.group(1,2,3))
-            end = date(*match.group(4,5,6))
+            start = date(*match.group(1,2,3).map(int))
+            end = date(*match.group(4,5,6).map(int))
             interval = InsarInterval(entry.name, entry.path, start, end)
             unw = os.path.join(entry.path, f"{entry.name}{variant}.unw")
             if os.path.isfile(unw):
