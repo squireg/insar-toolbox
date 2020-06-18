@@ -238,10 +238,11 @@ class InsarTile(object):
             elem = tile.find(element, ns)
             if elem:
                 return elem.text
+            return f"NO TILE ELEMENT {element}"
 
         self.gmlid = tile.get(f"{{{ns['gml']}}}id")
-        self.relorb = _prop("insar:RelOrbit")
-        self.frame = _prop("insar:Frame")
+        self.relorb = _prop("insar:relorbit")
+        self.frame = _prop("insar:frame")
 
     def scan_ard(self, ard_dir, variant):
         """Scan INSAR files for this tile and return number of interferograms."""
@@ -384,7 +385,7 @@ except Exception as ex:
     print("Loading INSAR tile features failed:", ex)
     sys.exit(1)
 
-tile_dir = os.path.join(INSAR_ARD_DIR, f"T{tile.relorb()}D_F{tile.frame()}")
+tile_dir = os.path.join(INSAR_ARD_DIR, f"T{tile.relorb}D_F{tile.frame}")
 if not os.path.isdir(tile_dir):
     print("Interferograms directory from tile info not found")
     print(tile_dir, " is not a directory.")
