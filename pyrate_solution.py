@@ -32,8 +32,7 @@ START_DATE = "${startdate}"
 END_DATE = "${enddate}"
 
 # Tile dataset to grab pyrate tile data from.
-#insar_tiles = "${insar_tiles}"
-insar_tiles = "/home/599/ggs599/test.xml"
+insar_tiles = "${insar_tiles}"
 
 CONF_FILE = r"""
 # PyRate configuration file for GAMMA-format interferograms
@@ -422,7 +421,7 @@ with TemporaryDirectory() as temp_output_dir:
     intervals = tile.intervals()
     has_tifs = all(i.tif for i in intervals)
     if has_tifs:
-        print("Found tifs for all interferograms, will skip prepifg")
+        print("Found tifs for all interferograms, will skip conv2tif")
 
     # Generate the ifg list
     ifgfilelist = os.path.join(temp_output_dir, "interferograms.list")
@@ -467,7 +466,8 @@ with TemporaryDirectory() as temp_output_dir:
     # Run PyRate if we have a hopefully valid config
     if all(v is not None for v in config.values()):
         try:
-            run_pyrate_cmd("conv2tif", conf_file)
+            if not has_tifs:
+                run_pyrate_cmd("conv2tif", conf_file)
             run_pyrate_cmd("prepifg", conf_file)
             run_pyrate_cmd("process", conf_file)
             run_pyrate_cmd("merge", conf_file)
