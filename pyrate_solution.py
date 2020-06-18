@@ -244,7 +244,7 @@ class InsarTile(object):
         self.relorb = _prop("insar:relorbit")
         self.frame = _prop("insar:frame")
 
-    def scan_ard(self, ard_dir, variant):
+    def scan_ard(self, ard_dir, variant, coh_variant):
         """Scan INSAR files for this tile and return number of interferograms."""
         # Check we have an interferograms directory
         ifgdir = os.path.join(ard_dir, "INT")
@@ -256,7 +256,7 @@ class InsarTile(object):
         with os.scandir(ifgdir) as it:
             for entry in it:
                 if entry.is_dir():
-                    self.load_interval(entry, variant)
+                    self.load_interval(entry, variant, coh_variant)
         self._intervals = sorted(self._intervals, key=lambda x: x.start)
 
         # Find the DEM files for this tile
