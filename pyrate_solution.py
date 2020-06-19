@@ -277,8 +277,20 @@ class InsarTile(object):
             if not dem_f:
                 print("No DEM file found in DEM directory.")
             else:
-                dem_h = f"{dem_f.rpartition('.')[0]}.par"
-                if os.path.isfile(dem_h):
+                # DEM header can be *.dem.par or *_dem.par, where the * is the
+                # same as the stem from the DEM file, but the '.' or '_' before
+                # 'dem.par' may be different to the pattern used in the DEM
+                # file!
+                #
+                # Find the stem from dem_f, strip the trailing '.' or '_', and
+                # append '[._]dem.par' to find the header file.
+                stem = dem_f.rpartition("dem.tif")[0][:-1]
+                for c in "._":
+                    tryh = f"{stem}{c}dem.par"
+                    if os.path.isfile(tryh):
+                        dem_h = tryh
+                        break
+                if dem_h:
                     print("Found standard DEM file:", dem_f)
                     print("Found matching standard DEM header file:", dem_h)
                     self.dem_file = dem_f
