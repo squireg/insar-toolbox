@@ -269,7 +269,7 @@ class InsarTile(object):
             latest = None
             dem_f = None
             dem_h = None
-            for f in glob(os.path.join(demdir, f"*{variant}.dem.tif")):
+            for f in glob(os.path.join(demdir, f"*{variant}[._]dem.tif")):
                 demdate = INSAR_DEM_RE.match(os.path.basename(f))
                 if latest is None or demdate > latest:
                     latest = demdate
