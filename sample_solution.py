@@ -232,7 +232,9 @@ with TemporaryDirectory() as temp_output_dir:
     with open(conf_file, 'w') as f:
         f.write(CONF_FILE.format(temp_output_dir))
 
-    # Run complete PyRate workflow
+    # Run complete PyRate workflow from inside the pyrate toolbox directory
+    # so the relative paths in the config files work.
+    os.chdir("/g/data/dg9/insar/Data61_VL/toolbox/PyRate")
     try:
         run_pyrate_cmd("workflow", conf_file)
     except subprocess.CalledProcessError as ex:
