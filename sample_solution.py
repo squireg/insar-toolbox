@@ -44,25 +44,25 @@ processes:     4
 # Input/Output file locations
 #
 # File containing the list of interferograms to use.
-ifgfilelist:   tests/test_data/cropA/ifg_30
+ifgfilelist:   /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/cropA/ifg_30
 
 # The DEM file used in the InSAR processing
-demfile:       tests/test_data/cropA/geotiffs/cropA_T005A_dem.tif
+demfile:       /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/cropA/geotiffs/cropA_T005A_dem.tif
 
 # The DEM header file from GAMMA (*.par) or ROI_PAC (*.rsc).
-demHeaderFile: tests/test_data/cropA/headers/cropA_20180106_VV_8rlks_eqa_dem.par
+demHeaderFile: /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/cropA/headers/cropA_20180106_VV_8rlks_eqa_dem.par
 
 # File listing the pool of available header files (GAMMA: *mli.par, ROI_PAC: *.rsc)
-hdrfilelist:   tests/test_data/cropA/headers_13
+hdrfilelist:   /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/cropA/headers_13
 
 # File listing the pool of available coherence files.
-cohfilelist:   tests/test_data/cropA/coherence_30
+cohfilelist:   /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/cropA/coherence_30
 
 # File listing the pool of available baseline files (GAMMA).
-basefilelist:  tests/test_data/cropA/baseline_30
+basefilelist:  /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/cropA/baseline_30
 
 # Look-up table containing radar-coded row and column for lat/lon pixels (GAMMA)
-ltfile:        tests/test_data/cropA/geometry/20180106_VV_8rlks_eqa_to_rdc.lt
+ltfile:        /g/data/dg9/insar/Data61_VL/toolbox/PyRate/tests/test_data/cropA/geometry/20180106_VV_8rlks_eqa_to_rdc.lt
 
 # Directory to write the outputs to
 outdir:        {0}
@@ -246,6 +246,8 @@ with TemporaryDirectory() as temp_output_dir:
     for f in os.listdir(temp_output_dir):
         abs_f = os.path.join(temp_output_dir, f)
         if os.path.isdir(abs_f):
+            fzip = f"{f}.zip"
+            print("Zipping dir", f, "into", fzip, ".")
             with ZipFile(f"{f}.zip", 'a') as z:
                 z.write(f)
     # Upload results, files only
