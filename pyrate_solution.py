@@ -43,14 +43,38 @@ CONF_FILE = r"""
 # Coherence masking (PREPIFG)
 cohmask:   ${cohmask}
 
-# Orbital error correction (PROCESS)
+# Orbital error correction (CORRECT)
 orbfit:    ${orbfit}
 
-# APS correction using spatio-temporal filter (PROCESS)
+# APS correction using spatio-temporal filter (CORRECT)
 apsest:    ${apsest}
+
+# DEM error (residual topography) correction (CORRECT)
+demerror:      ${demerror}
+
+# Phase Closure correction (CORRECT)
+phase_closure: 0
 
 # Time series calculation (PROCESS)
 tscal:     ${tscal}
+
+# Optional save of numpy array files for output products (MERGE)
+savenpy:       ${savenpy}
+
+# Optional save of incremental time series products (TIMESERIES/MERGE)
+savetsincr:    ${savetsincr}
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Integer parameters
+
+# LOS Projection of output products converts slanted (native) LOS signals
+# to either "pseudo-vertical" or "pseudo-horizontal", by dividing by the
+# cosine or sine of the incidence angle for each pixel, respectively.
+# los_projection: 0 = LOS (no conversion); 1 = pseudo-vertical; 2 = pseudo-horizontal.
+los_projection: ${los_projection}
+
+# Number of sigma to report velocity error. Positive integer. Default: 2 (TIMESERIES/STACK)
+velerror_nsig: 2
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Multi-threading parameters used by stacking/timeseries/prepifg
@@ -58,7 +82,7 @@ tscal:     ${tscal}
 # parallel: 1 = parallel, 0 = serial
 parallel:  0
 # number of processes
-processes: 8
+processes: 1
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Input/Output file locations
@@ -77,6 +101,14 @@ hdrfilelist:   {hdrfilelist}
 
 # File listing the pool of available coherence files.
 cohfilelist:   {cohfilelist}
+
+# File listing the pool of available baseline files (GAMMA).
+#basefilelist:  tests/test_data/cropA/baseline_30
+basefilelist:  {basefilelist}
+
+# Look-up table containing radar-coded row and column for lat/lon pixels (GAMMA)
+#ltfile:        tests/test_data/cropA/geometry/20180106_VV_8rlks_eqa_to_rdc.lt
+ltfile:        {ltfile}
 
 # Directory to write the outputs to
 outdir:        {outdir}
@@ -114,7 +146,7 @@ noDataValue:  0.0
 nan_conversion: 1
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# PROCESS parameters
+# CORRECT parameters
 #------------------------------------
 # Reference pixel search options
 
@@ -134,7 +166,7 @@ refminfrac:    ${refminfrac}
 
 # refest: 1 = median of the whole interferogram
 # refest: 2 = median within the window surrounding the chosen reference pixel
-refest:        2
+refest:        ${refest}
 
 #------------------------------------
 # Orbital error correction
@@ -142,10 +174,30 @@ refest:        2
 # orbfitmethod = 1: interferograms corrected independently; 2: network method
 # orbfitdegrees: Degree of polynomial surface to fit (1 = planar; 2 = quadratic; 3 = part-cubic)
 # orbfitlksx/y: additional multi-look factor for orbital correction
-orbfitmethod:  2
+orbfitmethod:  ${orbfitmethod}
 orbfitdegrees: ${orbfitdegrees}
 orbfitlksx:    10
 orbfitlksy:    10
+
+#------------------------------------
+# Phase closure correction parameters
+
+# large_deviation_threshold_for_pixel # multiples of pi. For ex: 0.5 means pi/2, 1 means pi etc.
+# avg_ifg_err_thr: ifgs with more than this fraction of pixels with error will be dropped
+# loops_thr_ifg: pixel with phase unwrap error in at least this many loops
+# phs_unw_err_thr: pixel with phase unwrap error in more than this many ifgs will be flagged
+# max_loop_length: loops upto this many edges are considered for closure checks
+# subtract_median: whether to subtract median during closure checks
+# max_loops_in_ifg: loops with more than these many ifgs are discarded.
+# max_loops_in_ifg: Ifg count must be met for all ifgs in the loop for loop to be discarded
+large_dev_thr:    0.5
+avg_ifg_err_thr:  0.07
+loops_thr_ifg:    2
+phs_unw_err_thr:  5
+max_loop_length:  4
+subtract_median:  1
+max_loops_in_ifg: 2
+
 
 #------------------------------------
 # APS spatial low-pass filter parameters
@@ -191,7 +243,13 @@ ts_pthr:       ${ts_pthr}
 # maxsig: maximum residual used as a threshold for values in the rate map
 pthr:          ${pthr}
 nsig:          ${nsig}
-maxsig:        1000
+maxsig:        ${maxsig}
+
+#------------------------------------
+# DEM error (residual topography) correction parameters
+
+# de_pthr: valid observations threshold;
+de_pthr:       20
 """
 
 # Namespaces for wfs/gml/etc
@@ -478,11 +536,14 @@ with TemporaryDirectory() as temp_output_dir:
     # Run PyRate if we have a hopefully valid config
     if all(v is not None for v in config.values()):
         try:
-            if not has_tifs:
-                run_pyrate_cmd("conv2tif", conf_file)
-            run_pyrate_cmd("prepifg", conf_file)
-            run_pyrate_cmd("process", conf_file)
-            run_pyrate_cmd("merge", conf_file)
+            # Run the full workflow
+            # TODO allow user to configure the steps they want to run
+            run_pyrate_cmd("workflow", conf_file)
+            # if not has_tifs:
+            #     run_pyrate_cmd("conv2tif", conf_file)
+            # run_pyrate_cmd("prepifg", conf_file)
+            # run_pyrate_cmd("process", conf_file)
+            # run_pyrate_cmd("merge", conf_file)
         except subprocess.CalledProcessError as ex:
             with open(os.path.join(temp_output_dir, "EXCEPTION.txt"), 'w') as f:
                 f.write(f"PyRate job failed with exception.\nreturncode: {ex.returncode}\nfailed command: {ex.cmd}\n\nexception: {ex!r}")
