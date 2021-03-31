@@ -405,11 +405,11 @@ class InsarTile(object):
                     else:
                         print("Missing coherence file", coh, "for interferogram:", interval.tif if interval.tif else interval.unw)
                 # Find the matching baseline file
-                baseline = os.path.join(entry.path, f"{entry.name}{base_variant}_base.par")
-                if os.path.isfile(baseline):
-                    interval.baseline = baseline
+                basefile = os.path.join(entry.path, f"{entry.name}{base_variant}_base.par")
+                if os.path.isfile(basefile):
+                    interval.baseline = basefile
                 else:
-                    print("Missing baseline file", baseline, "for interferogram:", interval.tif if interval.tif else interval.unw)
+                    print("Missing baseline file", basefile, "for interferogram:", interval.tif if interval.tif else interval.unw)
                 self._intervals.append(interval)
             else:
                 print(f"No unwrapped interferogram or tiff found in {entry.path}")
@@ -516,13 +516,17 @@ with TemporaryDirectory() as temp_output_dir:
     # Generate the ifg list
     ifgfilelist = os.path.join(temp_output_dir, "interferograms.list")
     cohfile = os.path.join(temp_output_dir, "coh_list.txt")
+    basefilelist = os.path.join(temp_output_dir, "baselinefiles.list")
     with open(ifgfilelist, 'w') as f:
         with open(cohfile, 'w') as g:
-            for interval in intervals:
-                f.write(interval.tif if has_tifs else interval.unw)
-                f.write('\n')
-                g.write(interval.coh)
-                g.write('\n')
+            with open(basefilelist, 'w') as h:
+                for interval in intervals:
+                    f.write(interval.tif if has_tifs else interval.unw)
+                    f.write('\n')
+                    g.write(interval.coh)
+                    g.write('\n')
+                    h.write(interval.basefile)
+                    h.write('\n')
 
     # Find the DEM and its header file
     if not tile.dem_file or not tile.dem_header:
@@ -545,6 +549,7 @@ with TemporaryDirectory() as temp_output_dir:
                   demfile=tile.dem_file,
                   demheaderfile=tile.dem_header,
                   ltfile=tile.lt_file,
+                  basefilelist=basefilelist,
                   hdrfilelist=hdrfile,
                   cohfilelist=cohfile,
                   outdir=temp_output_dir)
