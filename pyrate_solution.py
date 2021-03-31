@@ -9,6 +9,7 @@ from datetime import date
 import re
 
 INSAR_ARD_DIR = "/g/data/dz56/INSAR_ARD/VV/INSAR_ANALYSIS/VICTORIA/S1/GAMMA/"
+INSAR_BASE_VARIANT = "_VV_4rlks"
 INSAR_ARD_VARIANT = "_VV_4rlks_eqa"
 INSAR_COH_VARIANT = "_VV_4rlks_flat_eqa"
 INSAR_INTERVAL_DIR_RE = re.compile("(\d\d\d\d)(\d\d)(\d\d)-(\d\d\d\d)(\d\d)(\d\d)")
@@ -302,7 +303,7 @@ class InsarTile(object):
         self.relorb = _prop("insar:relorbit")
         self.frame = _prop("insar:frame")
 
-    def scan_ard(self, ard_dir, variant, coh_variant):
+    def scan_ard(self, ard_dir, variant, coh_variant, base_variant):
         """Scan INSAR files for this tile and return number of interferograms."""
         # Check we have an interferograms directory
         ifgdir = os.path.join(ard_dir, "INT")
@@ -314,7 +315,7 @@ class InsarTile(object):
         with os.scandir(ifgdir) as it:
             for entry in it:
                 if entry.is_dir():
-                    self.load_interval(entry, variant, coh_variant)
+                    self.load_interval(entry, variant, coh_variant, base_variant)
         self._intervals = sorted(self._intervals, key=lambda x: x.start)
 
         # Find the DEM files for this tile
@@ -327,6 +328,7 @@ class InsarTile(object):
             latest = None
             dem_f = None
             dem_h = None
+            rdc_lt = None
             for f in glob(os.path.join(demdir, f"*{variant}[._]dem.tif")):
                 demdate = INSAR_DEM_RE.match(os.path.basename(f))
                 if latest is None or demdate > latest:
@@ -335,6 +337,8 @@ class InsarTile(object):
             if not dem_f:
                 print("No DEM file found in DEM directory.")
             else:
+                print("Found standard DEM file:", dem_f)
+                self.dem_file = dem_f
                 # DEM header can be *.dem.par or *_dem.par, where the * is the
                 # same as the stem from the DEM file, but the '.' or '_' before
                 # 'dem.par' may be different to the pattern used in the DEM
@@ -349,12 +353,17 @@ class InsarTile(object):
                         dem_h = tryh
                         break
                 if dem_h:
-                    print("Found standard DEM file:", dem_f)
                     print("Found matching standard DEM header file:", dem_h)
-                    self.dem_file = dem_f
                     self.dem_header = dem_h
                 else:
                     print("No DEM header file found to match DEM file")
+                # Repeat the search for the "<stem>_to_rdc.lt" lookup table file.
+                trylt = f"{stem}_to_rdc.lt"
+                if os.path.isfile(trylt):
+                    print("Found matching standard lookup table file:", trylt)
+                    self.lt_file = trylt
+                else:
+                    print("No matching lookup table file found to match DEM file.")
 
         # Find the SLC header files
         slcdir = os.path.join(ard_dir, "SLC")
@@ -364,7 +373,7 @@ class InsarTile(object):
             print("Found standard SLC directory for tile:", slcdir)
             self.slcs = glob(os.path.join(slcdir, "*", "*_VV.slc.par"))
 
-    def load_interval(self, entry, variant, coh_variant):
+    def load_interval(self, entry, variant, coh_variant, base_variant):
         """Load the interval contained in DirEntry entry."""
         match = INSAR_INTERVAL_DIR_RE.match(entry.name)
         if match:
@@ -383,6 +392,8 @@ class InsarTile(object):
                 if os.path.isfile(tif):
                     interval.tif = tif
             if interval.unw or interval.tif:
+                # Found an interferogram file.
+                # Find the matching coherence file
                 coh = os.path.join(entry.path, f"{entry.name}{coh_variant}.cc.tif")
                 if os.path.isfile(coh):
                     interval.coh = coh
@@ -393,6 +404,12 @@ class InsarTile(object):
                         interval.coh = coh
                     else:
                         print("Missing coherence file", coh, "for interferogram:", interval.tif if interval.tif else interval.unw)
+                # Find the matching baseline file
+                baseline = os.path.join(entry.path, f"{entry.name}{base_variant}_base.par")
+                if os.path.isfile(baseline):
+                    interval.baseline = baseline
+                else:
+                    print("Missing baseline file", baseline, "for interferogram:", interval.tif if interval.tif else interval.unw)
                 self._intervals.append(interval)
             else:
                 print(f"No unwrapped interferogram or tiff found in {entry.path}")
@@ -487,7 +504,10 @@ def run_pyrate_cmd(pyrate_cmd, config_file, *args):
 # Create a temporary directory for the config and output files.
 with TemporaryDirectory() as temp_output_dir:
     print("Created PyRate output directory", temp_output_dir)
-    tile.scan_ard(tile_dir, INSAR_ARD_VARIANT, INSAR_COH_VARIANT)
+    tile.scan_ard(tile_dir,
+                  INSAR_ARD_VARIANT,
+                  INSAR_COH_VARIANT,
+                  INSAR_BASE_VARIANT)
     intervals = tile.intervals()
     has_tifs = all(i.tif for i in intervals)
     if has_tifs:
@@ -524,6 +544,7 @@ with TemporaryDirectory() as temp_output_dir:
     config = dict(ifgfilelist=ifgfilelist,
                   demfile=tile.dem_file,
                   demheaderfile=tile.dem_header,
+                  ltfile=tile.lt_file,
                   hdrfilelist=hdrfile,
                   cohfilelist=cohfile,
                   outdir=temp_output_dir)
