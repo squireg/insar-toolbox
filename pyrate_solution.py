@@ -407,7 +407,7 @@ class InsarTile(object):
                 # Find the matching baseline file
                 basefile = os.path.join(entry.path, f"{entry.name}{base_variant}_base.par")
                 if os.path.isfile(basefile):
-                    interval.baseline = basefile
+                    interval.basefile = basefile
                 else:
                     print("Missing baseline file", basefile, "for interferogram:", interval.tif if interval.tif else interval.unw)
                 self._intervals.append(interval)
