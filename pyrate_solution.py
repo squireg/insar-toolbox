@@ -46,7 +46,7 @@ START_DATE = "${startdate}"
 END_DATE = "${enddate}"
 
 # Tile dataset to grab pyrate tile data from.
-insar_tiles = "./test.xml"
+insar_tiles = "${insar_tiles}"
 
 CONF_FILE = r"""
 # PyRate configuration file for GAMMA-format interferograms
