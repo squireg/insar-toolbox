@@ -8,12 +8,25 @@ import xml.etree.ElementTree as ET
 from datetime import date
 import re
 
-INSAR_ARD_DIR = "/g/data/dz56/INSAR_ARD/VV/INSAR_ANALYSIS/VICTORIA/S1/GAMMA/"
-INSAR_BASE_VARIANT = "_VV_4rlks"
-INSAR_ARD_VARIANT = "_VV_4rlks_eqa"
-INSAR_COH_VARIANT = "_VV_4rlks_flat_eqa"
+# ================
+# VIC and NSW 2021
+# ================
+INSAR_ARD_DIR = "/g/data/dz56/insar_initial_processing/"
+INSAR_BASE_VARIANT = "_VV_8rlks"
+INSAR_ARD_VARIANT = "_VV_8rlks_geo"
+INSAR_COH_VARIANT = "_VV_8rlks_flat_geo"
+
+# ========
+# VICTORIA
+# ========
+# INSAR_ARD_DIR = "/g/data/dz56/INSAR_ARD/VV/INSAR_ANALYSIS/VICTORIA/S1/GAMMA/"
+# INSAR_BASE_VARIANT = "_VV_4rlks"
+# INSAR_ARD_VARIANT = "_VV_4rlks_eqa"
+# INSAR_COH_VARIANT = "_VV_4rlks_flat_eqa"
+
 INSAR_INTERVAL_DIR_RE = re.compile("(\d\d\d\d)(\d\d)(\d\d)-(\d\d\d\d)(\d\d)(\d\d)")
 INSAR_DEM_RE = re.compile("(\d\d\d\d)(\d\d)(\d\d).*")
+INSAR_FRAME_RE = re.compile("T(\d+)D_F(\d+)S_(.+)")
 
 # TODO: Use start/end dates to select interferograms, but how to resolve date
 # ranges in input files where there are overlaps? E.g for the following three
@@ -33,7 +46,7 @@ START_DATE = "${startdate}"
 END_DATE = "${enddate}"
 
 # Tile dataset to grab pyrate tile data from.
-insar_tiles = "${insar_tiles}"
+insar_tiles = "./test.xml"
 
 CONF_FILE = r"""
 # PyRate configuration file for GAMMA-format interferograms
@@ -259,14 +272,16 @@ NS_WFS1 = {
     "gml": "http://www.opengis.net/gml",
     "insar": "http://csiro.au/insar"
 }
-PATH_WFS1 = "./gml:featureMembers//insar:S1_descending_frames"
+PATH_WFS1 = "./gml:featureMembers//insar:insar_tiles"
+# TODO: look for insar tile schema rather than element name
 
 NS_WFS2 = {
     "wfs": "http://www.opengis.net/wfs/2.0",
     "gml": "http://www.opengis.net/gml/3.2",
     "insar": "http://csiro.au/insar"
 }
-PATH_WFS2 = "./wfs:member//insar:S1_descending_frames"
+PATH_WFS2 = "./wfs:member//insar:insar_tiles"
+# TODO: look for insar tile schema rather than element name
 
 
 class PyrateException(Exception):
@@ -292,16 +307,33 @@ class InsarTile(object):
         self.tile = tile
         self.ns = ns
         self._intervals = []
-
-        def _prop(element):
-            elem = tile.find(element, namespaces=ns)
-            if elem is not None:
-                return elem.text
-            return f"NO TILE ELEMENT {element}"
-
         self.gmlid = tile.get(f"{{{ns['gml']}}}id")
-        self.relorb = _prop("insar:relorbit")
-        self.frame = _prop("insar:frame")
+        self._framea = None
+
+    @property
+    def relorb(self):
+        """Return the relative orbit."""
+        return self._prop("insar:relative_o")
+
+    @property
+    def frame(self):
+        """Return the frame.
+
+        Frame identifier is extracted from the 'frameA' property of the feature,
+        which is a string of the form 'T<relorb>D_F<frame>S_SXY'.
+
+        """
+        if not self._framea:
+            self._parse_framea()
+        return self._frame
+
+    @property
+    def tiledir(self):
+        """Return the name of the tile directory."""
+        if not self._framea:
+            self._parse_framea()
+        return self._framea
+    # return f"T{self.relorb}D_F{self.frame}"
 
     def scan_ard(self, ard_dir, variant, coh_variant, base_variant):
         """Scan INSAR files for this tile and return number of interferograms."""
@@ -329,7 +361,7 @@ class InsarTile(object):
             dem_f = None
             dem_h = None
             rdc_lt = None
-            for f in glob(os.path.join(demdir, f"*{variant}[._]dem.tif")):
+            for f in glob(os.path.join(demdir, f"*{variant}.dem")):
                 demdate = INSAR_DEM_RE.match(os.path.basename(f))
                 if latest is None or demdate > latest:
                     latest = demdate
@@ -346,7 +378,7 @@ class InsarTile(object):
                 #
                 # Find the stem from dem_f, strip the trailing '.' or '_', and
                 # append '[._]dem.par' to find the header file.
-                stem = dem_f.rpartition("dem.tif")[0][:-1]
+                stem = dem_f.rpartition(".dem")[0]
                 for c in "._":
                     tryh = f"{stem}{c}dem.par"
                     if os.path.isfile(tryh):
@@ -394,12 +426,12 @@ class InsarTile(object):
             if interval.unw or interval.tif:
                 # Found an interferogram file.
                 # Find the matching coherence file
-                coh = os.path.join(entry.path, f"{entry.name}{coh_variant}.cc.tif")
+                coh = os.path.join(entry.path, f"{entry.name}{coh_variant}.coh.tif")
                 if os.path.isfile(coh):
                     interval.coh = coh
                 else:
                     # Try underscore style
-                    coh = os.path.join(entry.path, f"{entry.name}{coh_variant}_cc.tif")
+                    coh = os.path.join(entry.path, f"{entry.name}{coh_variant}_coh.tif")
                     if os.path.isfile(coh):
                         interval.coh = coh
                     else:
@@ -433,6 +465,19 @@ class InsarTile(object):
                 end = self._intervals[-1].end
         return [i for i in self._intervals if i.start >= start and i.end <= end]
 
+    def _prop(self, element):
+        """Return the content of element in tile."""
+        elem = self.tile.find(element, namespaces=self.ns)
+        if elem is not None:
+            return elem.text
+        return f"NO ELEMENT {element} in tile xml."
+
+    def _parse_framea(self):
+        """Parse and save info from the framea property."""
+        self._framea = self._prop("insar:framea")
+        match = INSAR_FRAME_RE.match(self._framea)
+        self._relorb, self._frame, self._framea_rest = match.group(1, 2, 3)
+
 
 class InsarTileFeatures(object):
     """Parse a feature collection of INSAR tiles."""
@@ -451,6 +496,8 @@ class InsarTileFeatures(object):
             self.PATH = PATH_WFS2
         else:
             raise PyrateException("Not a WFS FeatureCollection, giving up.")
+        print("Namespace map:", self.ns)
+        print("Tiles path:", self.PATH)
 
     def tiles(self):
         """Return list of all tiles in the collection."""
@@ -487,7 +534,7 @@ except Exception as ex:
     print("Loading INSAR tile features failed:", ex)
     sys.exit(1)
 
-tile_dir = os.path.join(INSAR_ARD_DIR, f"T{tile.relorb}D_F{tile.frame}")
+tile_dir = os.path.join(INSAR_ARD_DIR, tile.tiledir)
 if not os.path.isdir(tile_dir):
     print("Interferograms directory from tile info not found")
     print(tile_dir, " is not a directory.")
