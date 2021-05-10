@@ -617,13 +617,15 @@ with TemporaryDirectory() as temp_output_dir:
                   ifgxlast='',
                   ifgylast='')
 
-    # Parse the ifg crop lat/lon values from the crop_bbox string.
+    # Parse the ifg crop lat/lon values from the crop_bbox string. NB pyrate
+    # expects ifgyfirst to be the northerly latitude (i.e. they want TL-BR
+    # ordering)
     match = BBOX_RE.match(crop_bbox.strip())
     if match:
         config['ifgxfirst'] = f"ifgxfirst:    {match.group(1)}"
-        config['ifgyfirst'] = f"ifgyfirst:    {match.group(2)}"
+        config['ifgyfirst'] = f"ifgyfirst:    {match.group(4)}"
         config['ifgxlast'] = f"ifgxlast:     {match.group(3)}"
-        config['ifgylast'] = f"ifgylast:     {match.group(4)}"
+        config['ifgylast'] = f"ifgylast:     {match.group(2)}"
 
     # Create the config file with interpolated values
     conf_file = os.path.join(temp_output_dir, "pyrate_job.conf")
