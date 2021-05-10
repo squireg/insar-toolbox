@@ -48,6 +48,11 @@ END_DATE = "${enddate}"
 # Tile dataset to grab pyrate tile data from.
 insar_tiles = "${insar_tiles}"
 
+# Bounding box to crop processing in geojson bbox format "south lon, west lat,
+# north lon, east lat".
+BBOX_RE = re.compile("\[?(-?\d+)\W+(-?\d+)\W+(-?\d+)\W+(-?\d+)\]?")
+crop_bbox = "${crop_bbox}"
+
 CONF_FILE = r"""
 # PyRate configuration file for GAMMA-format interferograms
 #
@@ -145,10 +150,10 @@ ifglksy:      ${ifglksy}
 # ifgxfirst,ifgyfirst: longitude (x) and latitude (y) of north-west corner
 # ifgxlast,ifgylast: longitude (x) and latitude (y) of south-east corner
 ifgcropopt:   3
-ifgxfirst:    ${ifgxfirst}
-ifgyfirst:    ${ifgyfirst}
-ifgxlast:     ${ifgxlast}
-ifgylast:     ${ifgylast}
+{ifgxfirst}
+{ifgyfirst}
+{ifgxlast}
+{ifgylast}
 
 # No-data averaging threshold (0 = 0%; 1 = 100%)
 noDataAveragingThreshold: 0.5
@@ -606,7 +611,19 @@ with TemporaryDirectory() as temp_output_dir:
                   basefilelist=basefilelist,
                   hdrfilelist=hdrfile,
                   cohfilelist=cohfile,
-                  outdir=temp_output_dir)
+                  outdir=temp_output_dir,
+                  ifgxfirst='',
+                  ifgyfirst='',
+                  ifgxlast='',
+                  ifgylast='')
+
+    # Parse the ifg crop lat/lon values from the crop_bbox string.
+    match = BBOX_RE.match(crop_bbox)
+    if match:
+        config['ifgxfirst'] = f"ifgxfirst:    {match.group(1)}"
+        config['ifgyfirst'] = f"ifgyfirst:    {match.group(2)}"
+        config['ifgxlast'] = f"ifgxlast:     {match.group(3)}"
+        config['ifgylast'] = f"ifgylast:     {match.group(4)}"
 
     # Create the config file with interpolated values
     conf_file = os.path.join(temp_output_dir, "pyrate_job.conf")
