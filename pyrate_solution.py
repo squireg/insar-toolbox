@@ -50,7 +50,7 @@ insar_tiles = "${insar_tiles}"
 
 # Bounding box to crop processing in geojson bbox format "south lon, west lat,
 # north lon, east lat".
-BBOX_RE = re.compile("\[?(-?\d+(?:\.\d+)?)\W+(-?\d+(?:\.\d+)?))\W+(-?\d+(?:\.\d+)?))\W+(-?\d+(?:\.\d+)?))\]?")
+BBOX_RE = re.compile("\[?(-?\d+(?:\.\d+)?)\W+(-?\d+(?:\.\d+)?)\W+(-?\d+(?:\.\d+)?)\W+(-?\d+(?:\.\d+)?)\]?")
 crop_bbox = "${crop_bbox}"
 
 CONF_FILE = r"""
