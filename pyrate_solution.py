@@ -309,6 +309,7 @@ class InsarTile(object):
         self._intervals = []
         self.gmlid = tile.get(f"{{{ns['gml']}}}id")
         self._framea = None
+        self._relorb, self._frame, self._framea_rest = None, None, None
 
     @property
     def relorb(self):
@@ -470,13 +471,19 @@ class InsarTile(object):
         elem = self.tile.find(element, namespaces=self.ns)
         if elem is not None:
             return elem.text
-        return f"NO ELEMENT {element} in tile xml."
+        return None
 
     def _parse_framea(self):
         """Parse and save info from the framea property."""
-        self._framea = self._prop("insar:framea")
-        match = INSAR_FRAME_RE.match(self._framea)
-        self._relorb, self._frame, self._framea_rest = match.group(1, 2, 3)
+        fab = self._prop("insar:framea")
+        if fab is None:
+            # Try the frameb property
+            fab = self._prop("insar:frameb")
+        if fab:
+            self._framea = fab
+            match = INSAR_FRAME_RE.match(fab)
+            if match:
+                self._relorb, self._frame, self._framea_rest = match.group(1, 2, 3)
 
 
 class InsarTileFeatures(object):
