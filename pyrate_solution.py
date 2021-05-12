@@ -48,8 +48,8 @@ END_DATE = "${enddate}"
 # Tile dataset to grab pyrate tile data from.
 insar_tiles = "${insar_tiles}"
 
-# Bounding box to crop processing in geojson bbox format "south lon, west lat,
-# north lon, east lat".
+# Bounding box to crop processing in geojson bbox format "west lon, south lat,
+# east lon, north lat". Values can be separated by commas and/or whitespace.
 BBOX_RE = re.compile("\[?(-?\d+(?:\.\d+)?)[\s,]+(-?\d+(?:\.\d+)?)[\s,]+(-?\d+(?:\.\d+)?)[\s,]+(-?\d+(?:\.\d+)?)\]?")
 crop_bbox = "${crop_bbox}"
 
