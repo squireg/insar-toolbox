@@ -7,6 +7,7 @@ from tempfile import TemporaryDirectory
 import xml.etree.ElementTree as ET
 from datetime import date
 import re
+from typing import List
 
 # ================
 # VIC and NSW 2021
