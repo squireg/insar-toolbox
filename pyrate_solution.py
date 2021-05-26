@@ -532,6 +532,25 @@ class InsarTileFeatures(object):
         raise PyrateException("No tile found in input dataset.")
 
 
+# Return epoch strings in pyrate filename/path.
+#
+# Copied from https://github.com/GeoscienceAustralia/PyRate/blob/c3054c569b4b1827b61326741277606bc47e8463/pyrate/core/shared.py#L1373
+def extract_epochs_from_filename(filename_with_epochs: str) -> List[str]:
+    src_epochs = re.findall(r"(\d{8})", str(filename_with_epochs))
+    if not len(src_epochs) > 0:
+        src_epochs = re.findall(r"(\d{6})", str(filename_with_epochs))
+    return src_epochs
+
+
+def find_epoch(f):
+    """Return the first epoch string extracted from filename f."""
+    if f:
+        epochs = extract_epochs_from_filename(f)
+        if len(epochs) > 0:
+            return epochs[0]
+    return None
+
+
 dataset = InsarTileFeatures()
 try:
     # Load tile features from input dataset
@@ -600,7 +619,10 @@ with TemporaryDirectory() as temp_output_dir:
         sys.exit(1)
     hdrfile = os.path.join(temp_output_dir, "hdr_list.txt")
     with open(hdrfile, 'w') as f:
-        for slc in tile.slcs:
+        # NB - See gamma_header() in pyrate/core/gamma.py for use of this header
+        # file. It appears to assume the headers are sorted by epoch in
+        # ascending date order.
+        for slc in sorted(tile.slcs, key=find_epoch):
             f.write(slc)
             f.write('\n')
 
