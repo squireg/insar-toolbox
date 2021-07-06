@@ -12,7 +12,7 @@ from typing import List
 # ================
 # VIC and NSW 2021
 # ================
-INSAR_ARD_DIR = "/g/data/dz56/insar_initial_processing/"
+INSAR_ARD_DIR = "/g/data/dz56/insar_final_processing/"
 INSAR_BASE_VARIANT = "_VV_8rlks"
 INSAR_ARD_VARIANT = "_VV_8rlks_geo"
 INSAR_COH_VARIANT = "_VV_8rlks_flat_geo"
@@ -320,27 +320,22 @@ class InsarTile(object):
     @property
     def relorb(self):
         """Return the relative orbit."""
-        return self._prop("insar:relative_o")
+        return self._prop("insar:track")
+
+    @property
+    def track(self):
+        """Return the relative orbit."""
+        return self.relorb
 
     @property
     def frame(self):
-        """Return the frame.
-
-        Frame identifier is extracted from the 'frameA' property of the feature,
-        which is a string of the form 'T<relorb>D_F<frame>S_SXY'.
-
-        """
-        if not self._framea:
-            self._parse_framea()
-        return self._frame
+        """Return the frame. """
+        return self._prop("insar:frame_id")
 
     @property
     def tiledir(self):
         """Return the name of the tile directory."""
-        if not self._framea:
-            self._parse_framea()
-        return self._framea
-    # return f"T{self.relorb}D_F{self.frame}"
+        return self._prop("insar:tile_name")
 
     def scan_ard(self, ard_dir, variant, coh_variant, base_variant):
         """Scan INSAR files for this tile and return number of interferograms."""
