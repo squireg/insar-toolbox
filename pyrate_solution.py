@@ -47,7 +47,8 @@ START_DATE = "${startdate}"
 END_DATE = "${enddate}"
 
 # Tile dataset to grab pyrate tile data from.
-insar_tiles = "${insar_tiles}"
+#insar_tiles = "${insar_tiles}"
+insar_tiles = "tiles.xml"
 
 # Bounding box to crop processing in geojson bbox format "west lon, south lat,
 # east lon, north lat". Values can be separated by commas and/or whitespace.
@@ -358,12 +359,15 @@ class InsarTile(object):
             print("DEM directory not found in standard location.")
         else:
             print("Standard DEM directory found for tile:", demdir)
-            # Find latest dem file
+            # Find latest dem file, looking for a .dem.tif version first then
+            # raw .dem files.
             latest = None
             dem_f = None
             dem_h = None
             rdc_lt = None
-            for f in glob(os.path.join(demdir, f"*{variant}.dem")):
+            globs = [*glob(os.path.join(demdir, f"*{variant}.dem.tif")),
+                     *glob(os.path.join(demdir, f"*{variant}.dem"))]
+            for f in globs:
                 demdate = INSAR_DEM_RE.match(os.path.basename(f))
                 if latest is None or demdate > latest:
                     latest = demdate
