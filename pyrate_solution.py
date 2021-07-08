@@ -29,7 +29,7 @@ INSAR_INTERVAL_DIR_RE = re.compile("(\d\d\d\d)(\d\d)(\d\d)-(\d\d\d\d)(\d\d)(\d\d
 INSAR_DEM_RE = re.compile("(\d\d\d\d)(\d\d)(\d\d).*")
 INSAR_FRAME_RE = re.compile("T(\d+)D_F(\d+)S_(.+)")
 
-ISO_DATE_RE = re.compile("(\d\d\d\d)(\d\d)(\d\d)")
+ISO_DATE_RE = re.compile("(\d\d\d\d)-?(\d\d)-?(\d\d)")
 
 def parse_iso_date(iso_date):
     """Return the date object parsed from iso_date or None.
