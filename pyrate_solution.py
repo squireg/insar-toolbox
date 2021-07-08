@@ -29,6 +29,20 @@ INSAR_INTERVAL_DIR_RE = re.compile("(\d\d\d\d)(\d\d)(\d\d)-(\d\d\d\d)(\d\d)(\d\d
 INSAR_DEM_RE = re.compile("(\d\d\d\d)(\d\d)(\d\d).*")
 INSAR_FRAME_RE = re.compile("T(\d+)D_F(\d+)S_(.+)")
 
+ISO_DATE_RE = re.compile("(\d\d\d\d)(\d\d)(\d\d)")
+
+def parse_iso_date(iso_date):
+    """Return the date object parsed from iso_date or None.
+
+    Return None if iso_date is None or the empty string. A non-empty string that
+    fails to parse will raise an error.
+
+    """
+    if iso_date:
+        match = ISO_DATE_RE.match(iso_date)
+        return date(*map(int, match.group(1,2,3)))
+    return None
+
 # TODO: Use start/end dates to select interferograms, but how to resolve date
 # ranges in input files where there are overlaps? E.g for the following three
 # ranges, assuming start <= 20180606 and end >= 20180630, should we use [1,3],
@@ -42,9 +56,13 @@ INSAR_FRAME_RE = re.compile("T(\d+)D_F(\d+)S_(.+)")
 #
 # Dates will be parsed as ISO8601 strings, and assumed to match the timezone of
 # the date strings used in the interferogram path/filename structures.
-# 
-START_DATE = "${startdate}"
-END_DATE = "${enddate}"
+#
+START_DATE_ISO = "${startdate}"
+END_DATE_ISO = "${enddate}"
+start_date = parse_iso_date(START_DATE_ISO)
+end_date = parse_iso_date(END_DATE_ISO)
+print("Configured start date:", start_date.isoformat() if start_date else "None, will use all available data.")
+print("Configured end date:", end_date.isoformat() if end_date else "None, will use all available data.")
 
 # Tile dataset to grab pyrate tile data from.
 insar_tiles = "${insar_tiles}"
@@ -314,8 +332,6 @@ class InsarTile(object):
         self.ns = ns
         self._intervals = []
         self.gmlid = tile.get(f"{{{ns['gml']}}}id")
-        self._framea = None
-        self._relorb, self._frame, self._framea_rest = None, None, None
 
     @property
     def relorb(self):
@@ -337,8 +353,13 @@ class InsarTile(object):
         """Return the name of the tile directory."""
         return self._prop("insar:tile_name")
 
-    def scan_ard(self, ard_dir, variant, coh_variant, base_variant):
-        """Scan INSAR files for this tile and return number of interferograms."""
+    def scan_ard(self, ard_dir, variant, coh_variant, base_variant, start=None, end=None):
+        """Scan INSAR files for this tile and return number of interferograms.
+
+        If a start and/or end date are specified then only include the
+        interferograms that fall within the specified date range.
+
+        """
         # Check we have an interferograms directory
         ifgdir = os.path.join(ard_dir, "INT")
         if not os.path.isdir(ifgdir):
@@ -349,7 +370,7 @@ class InsarTile(object):
         with os.scandir(ifgdir) as it:
             for entry in it:
                 if entry.is_dir():
-                    self.load_interval(entry, variant, coh_variant, base_variant)
+                    self.load_interval(entry, variant, coh_variant, base_variant, start, end)
         self._intervals = sorted(self._intervals, key=lambda x: x.start)
 
         # Find the DEM files for this tile
@@ -410,12 +431,28 @@ class InsarTile(object):
             print("Found standard SLC directory for tile:", slcdir)
             self.slcs = glob(os.path.join(slcdir, "*", "*_VV.slc.par"))
 
-    def load_interval(self, entry, variant, coh_variant, base_variant):
-        """Load the interval contained in DirEntry entry."""
+    def load_interval(self, entry, variant, coh_variant, base_variant, start_date=None, end_date=None):
+        """Load the interval contained in DirEntry entry.
+
+        If we have a configured start and/or end date then the interval will
+        only be loaded if it falls entirely within the specified range.
+
+        """
+        # Parse directory name for start/end of the interval in the directory.
         match = INSAR_INTERVAL_DIR_RE.match(entry.name)
         if match:
             start = date(*map(int, match.group(1,2,3)))
             end = date(*map(int, match.group(4,5,6)))
+
+            # If we have a temporal constraint and this interval falls outside
+            # it then do not load it.
+            if ((start_date and start < start_date) or
+                (end_date and end > end_date)):
+                print("Ignoring interval directory outside configured date range:", entry.name)
+                return
+
+            # This interval is OK so continue to load it.
+            print("Loading interval directory:", entry.name)
             interval = InsarInterval(entry.name, entry.path, start, end)
             unw = os.path.join(entry.path, f"{entry.name}{variant}.unw")
             if os.path.isfile(unw):
@@ -476,18 +513,6 @@ class InsarTile(object):
         if elem is not None:
             return elem.text
         return None
-
-    def _parse_framea(self):
-        """Parse and save info from the framea property."""
-        fab = self._prop("insar:framea")
-        if fab is None:
-            # Try the frameb property
-            fab = self._prop("insar:frameb")
-        if fab:
-            self._framea = fab
-            match = INSAR_FRAME_RE.match(fab)
-            if match:
-                self._relorb, self._frame, self._framea_rest = match.group(1, 2, 3)
 
 
 class InsarTileFeatures(object):
@@ -581,10 +606,14 @@ def run_pyrate_cmd(pyrate_cmd, config_file, *args):
 # Create a temporary directory for the config and output files.
 with TemporaryDirectory() as temp_output_dir:
     print("Created PyRate output directory", temp_output_dir)
+
+    # Scan the data directory for the tile
     tile.scan_ard(tile_dir,
                   INSAR_ARD_VARIANT,
                   INSAR_COH_VARIANT,
-                  INSAR_BASE_VARIANT)
+                  INSAR_BASE_VARIANT,
+                  start_date,
+                  end_date)
     intervals = tile.intervals()
     has_tifs = all(i.tif for i in intervals)
     if has_tifs:
