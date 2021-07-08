@@ -29,7 +29,7 @@ INSAR_INTERVAL_DIR_RE = re.compile("(\d\d\d\d)(\d\d)(\d\d)-(\d\d\d\d)(\d\d)(\d\d
 INSAR_DEM_RE = re.compile("(\d\d\d\d)(\d\d)(\d\d).*")
 INSAR_FRAME_RE = re.compile("T(\d+)D_F(\d+)S_(.+)")
 
-ISO_DATE_RE = re.compile("(\d\d\d\d)-?(\d\d)-?(\d\d)")
+ISO_DATE_RE = re.compile("(\d\d\d\d)-(\d\d?)-(\d\d?)")
 
 def parse_iso_date(iso_date):
     """Return the date object parsed from iso_date or None.
@@ -40,7 +40,9 @@ def parse_iso_date(iso_date):
     """
     if iso_date:
         match = ISO_DATE_RE.match(iso_date)
-        return date(*map(int, match.group(1,2,3)))
+        if match:
+            return date(*map(int, match.group(1,2,3)))
+        print("Configured date not a valid ISO8601 string:", iso_date)
     return None
 
 # TODO: Use start/end dates to select interferograms, but how to resolve date
