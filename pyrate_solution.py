@@ -93,7 +93,7 @@ apsest:    ${apsest}
 demerror:      ${demerror}
 
 # Phase Closure correction (CORRECT)
-phase_closure: 0
+phase_closure: 1
 
 # Time series calculation (PROCESS)
 tscal:     ${tscal}
