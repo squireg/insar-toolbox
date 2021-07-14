@@ -707,5 +707,5 @@ with TemporaryDirectory() as temp_output_dir:
         abs_f = os.path.join(temp_output_dir, f)
         if not os.path.isdir(abs_f):
             # Work around vgl "cloud" bug by using relative filenames
-            subprocess.run(["cloud", "upload", f, f])
+            subprocess.run(["bash", "-c", f"source nci-util.sh; cloud upload {f} {f}"])
             # subprocess.run(["cloud", "upload", f, abs_f])
