@@ -700,12 +700,12 @@ with TemporaryDirectory() as temp_output_dir:
                 f.write(f"PyRate job failed with exception.\nreturncode: {ex.returncode}\nfailed command: {ex.cmd}\n\nexception: {ex!r}")
 
     # Upload results, files only
-    # Work around "cloud" bug in vgl by running in the output dir so we can use
-    # relative filenames.
-    os.chdir(temp_output_dir)
+    # # Work around "cloud" bug in vgl by running in the output dir so we can use
+    # # relative filenames.
+    # os.chdir(temp_output_dir)
     for f in os.listdir(temp_output_dir):
         abs_f = os.path.join(temp_output_dir, f)
         #if not os.path.isdir(abs_f):
         # Work around vgl "cloud" bug by using relative filenames
-        subprocess.run(["bash", "-c", f"source nci-util.sh; cloud upload {f} {f}"])
+        subprocess.run(["bash", "-c", f"source nci-util.sh; cloud upload {f} {abs_f}"])
         # subprocess.run(["cloud", "upload", f, abs_f])
