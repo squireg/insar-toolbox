@@ -723,7 +723,9 @@ with TemporaryDirectory() as temp_output_dir:
         for f in os.listdir(d):
             abs_f = os.path.join(d, f)
             if os.path.isdir(abs_f):
-                upload_results(abs_f, f"{prefix}{f}_")
+                # Ignore the tmpdir for now
+                if f != "tmpdir":
+                    upload_results(abs_f, f"{prefix}{f}_")
             else:
                 subprocess.run(["bash", "-c", f"source nci-util.sh; cloud upload {prefix}{f} {abs_f}"])
                 # subprocess.run(["cloud", "upload", f, abs_f])
