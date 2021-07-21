@@ -703,9 +703,29 @@ with TemporaryDirectory() as temp_output_dir:
     # # Work around "cloud" bug in vgl by running in the output dir so we can use
     # # relative filenames.
     # os.chdir(temp_output_dir)
-    for f in os.listdir(temp_output_dir):
-        abs_f = os.path.join(temp_output_dir, f)
-        #if not os.path.isdir(abs_f):
-        # Work around vgl "cloud" bug by using relative filenames
-        subprocess.run(["bash", "-c", f"source nci-util.sh; cloud upload {f} {abs_f}"])
-        # subprocess.run(["cloud", "upload", f, abs_f])
+
+    # Upload utility
+    # TODO: Pull out into VGL python library, replacing our old
+    # cloud.sh script and the version from nci-util.sh
+    def upload_results(d, prefix=None):
+        """Upload results from directory d, with optional prefix.
+
+        A result file is uploaded under its filename, possibly prefixed as
+        specified.
+
+        All the contents of a result directory will be uploaded with the
+        directory name as a prefix. It will recurse into subdirectories as
+        required.
+
+        """
+        if prefix is None:
+            prefix = ""
+        for f in os.listdir(d):
+            abs_f = os.path.join(d, f)
+            if os.path.isdir(abs_f):
+                upload_results(abs_f, f"{prefix}{f}_")
+            else:
+                subprocess.run(["bash", "-c", f"source nci-util.sh; cloud upload {prefix}{f} {abs_f}"])
+                # subprocess.run(["cloud", "upload", f, abs_f])
+
+    upload_results(temp_output_dir)
